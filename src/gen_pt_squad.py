@@ -30,17 +30,17 @@ from pytorch_pretrained_bert.tokenization import BertTokenizer
 import squad_data_utils as data_utils
 import modelconfig
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def gen(args):
 
-    tokenizer = BertTokenizer.from_pretrained(modelconfig.MODEL_ARCHIVE_MAP[args.bert_model] )
+def gen(args):
+    tokenizer = BertTokenizer.from_pretrained(modelconfig.MODEL_ARCHIVE_MAP[args.bert_model])
 
     train_examples = data_utils.read_squad_examples(os.path.join(args.input_dir, "train.json"), is_training=True)
-    
+
     train_features = data_utils.convert_examples_to_features(
         train_examples, tokenizer, args.max_seq_length, args.doc_stride, args.max_query_length, is_training=True)
     logger.info("***** Running training *****")
@@ -53,19 +53,19 @@ def gen(args):
     start_positions_np = np.array([f.start_position for f in train_features], dtype=np.int16)
     end_positions_np = np.array([f.end_position for f in train_features], dtype=np.int16)
 
-    np.savez_compressed(os.path.join(args.output_dir, "data.npz"), 
-                        input_ids=input_ids_np, 
-                        segment_ids = segment_ids_np, 
-                        input_mask = input_mask_np, 
-                        start_positions = start_positions_np, 
-                        end_positions = end_positions_np)
-    
-    #>>>>> validation
-    valid_examples=data_utils.read_squad_examples(os.path.join(args.input_dir,"dev.json"), is_training=True)
+    np.savez_compressed(os.path.join(args.output_dir, "data.npz"),
+                        input_ids=input_ids_np,
+                        segment_ids=segment_ids_np,
+                        input_mask=input_mask_np,
+                        start_positions=start_positions_np,
+                        end_positions=end_positions_np)
+
+    # >>>>> validation
+    valid_examples = data_utils.read_squad_examples(os.path.join(args.input_dir, "dev.json"), is_training=True)
 
     valid_features = data_utils.convert_examples_to_features(
         valid_examples, tokenizer, args.max_seq_length, args.doc_stride, args.max_query_length, is_training=True)
-    
+
     logger.info("  Num orig examples = %d", len(valid_examples))
     logger.info("  Num split examples = %d", len(valid_features))
 
@@ -74,16 +74,17 @@ def gen(args):
     valid_input_mask_np = np.array([f.input_mask for f in valid_features], dtype=np.int16)
     valid_start_positions_np = np.array([f.start_position for f in valid_features], dtype=np.int16)
     valid_end_positions_np = np.array([f.end_position for f in valid_features], dtype=np.int16)
-    
-    np.savez_compressed(os.path.join(args.output_dir, "dev.npz"), 
-                        input_ids=valid_input_ids_np, 
-                        segment_ids = valid_segment_ids_np, 
-                        input_mask = valid_input_mask_np, 
-                        start_positions = valid_start_positions_np, 
-                        end_positions = valid_end_positions_np)
-    #<<<<< end of validation declaration
 
-def main():    
+    np.savez_compressed(os.path.join(args.output_dir, "dev.npz"),
+                        input_ids=valid_input_ids_np,
+                        segment_ids=valid_segment_ids_np,
+                        input_mask=valid_input_mask_np,
+                        start_positions=valid_start_positions_np,
+                        end_positions=valid_end_positions_np)
+    # <<<<< end of validation declaration
+
+
+def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--bert-model", default='bert-base', type=str)
@@ -107,25 +108,24 @@ def main():
                         help="The maximum total input sequence length after WordPiece tokenization. \n"
                              "Sequences longer than this will be truncated, and sequences shorter \n"
                              "than this will be padded.")
-    
+
     parser.add_argument('--seed',
                         type=int,
                         default=0,
                         help="random seed for initialization")
-    
+
     parser.add_argument('--doc_stride',
                         type=int,
                         default=128)
-    
+
     parser.add_argument('--max_query_length',
                         type=int,
                         default=30)
-    
+
     parser.add_argument('--max_answer_length',
                         type=int,
                         default=30)
-    
-    
+
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -134,6 +134,7 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
     gen(args)
-    
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()

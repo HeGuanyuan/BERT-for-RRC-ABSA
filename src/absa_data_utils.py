@@ -21,20 +21,22 @@ import random
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 
-class ABSATokenizer(BertTokenizer):     
-    def subword_tokenize(self, tokens, labels): # for AE
-        split_tokens, split_labels= [], []
-        idx_map=[]
+
+class ABSATokenizer(BertTokenizer):
+    def subword_tokenize(self, tokens, labels):  # for AE
+        split_tokens, split_labels = [], []
+        idx_map = []
         for ix, token in enumerate(tokens):
-            sub_tokens=self.wordpiece_tokenizer.tokenize(token)
+            sub_tokens = self.wordpiece_tokenizer.tokenize(token)
             for jx, sub_token in enumerate(sub_tokens):
                 split_tokens.append(sub_token)
-                if labels[ix]=="B" and jx>0:
+                if labels[ix] == "B" and jx > 0:
                     split_labels.append("I")
                 else:
                     split_labels.append(labels[ix])
                 idx_map.append(ix)
         return split_tokens, split_labels, idx_map
+
 
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
@@ -77,7 +79,7 @@ class DataProcessor(object):
     def get_dev_examples(self, data_dir):
         """Gets a collection of `InputExample`s for the dev set."""
         raise NotImplementedError()
-        
+
     def get_test_examples(self, data_dir):
         """Gets a collection of `InputExample`s for the test set."""
         raise NotImplementedError()
@@ -91,8 +93,8 @@ class DataProcessor(object):
         """Reads a json file for tasks in sentiment analysis."""
         with open(input_file) as f:
             return json.load(f)
-        
-        
+
+
 class AeProcessor(DataProcessor):
     """Processor for the SemEval Aspect Extraction ."""
 
@@ -105,7 +107,7 @@ class AeProcessor(DataProcessor):
         """See base class."""
         return self._create_examples(
             self._read_json(os.path.join(data_dir, fn)), "dev")
-    
+
     def get_test_examples(self, data_dir, fn="test.json"):
         """See base class."""
         return self._create_examples(
@@ -119,13 +121,13 @@ class AeProcessor(DataProcessor):
         """Creates examples for the training and dev sets."""
         examples = []
         for (i, ids) in enumerate(lines):
-            guid = "%s-%s" % (set_type, ids )
+            guid = "%s-%s" % (set_type, ids)
             text_a = lines[ids]['sentence']
             label = lines[ids]['label']
             examples.append(
-                InputExample(guid=guid, text_a=text_a, label=label) )
-        return examples        
-        
+                InputExample(guid=guid, text_a=text_a, label=label))
+        return examples
+
 
 class AscProcessor(DataProcessor):
     """Processor for the SemEval Aspect Sentiment Classification."""
@@ -139,7 +141,7 @@ class AscProcessor(DataProcessor):
         """See base class."""
         return self._create_examples(
             self._read_json(os.path.join(data_dir, fn)), "dev")
-    
+
     def get_test_examples(self, data_dir, fn="test.json"):
         """See base class."""
         return self._create_examples(
@@ -148,31 +150,33 @@ class AscProcessor(DataProcessor):
     def get_labels(self):
         """See base class."""
         return ["positive", "negative", "neutral"]
-    
+
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
         for (i, ids) in enumerate(lines):
-            guid = "%s-%s" % (set_type, ids )
+            guid = "%s-%s" % (set_type, ids)
             text_a = lines[ids]['term']
             text_b = lines[ids]['sentence']
             label = lines[ids]['polarity']
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
-        return examples     
-    
+        return examples
+
+
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, mode):
-    """Loads a data file into a list of `InputBatch`s.""" #check later if we can merge this function with the SQuAD preprocessing 
+    """Loads a data file into a list of `InputBatch`s."""  # check later if we can merge this function with the SQuAD preprocessing
     label_map = {}
     for (i, label) in enumerate(label_list):
         label_map[label] = i
 
     features = []
     for (ex_index, example) in enumerate(examples):
-        if mode!="ae":
+        if mode != "ae":
             tokens_a = tokenizer.tokenize(example.text_a)
-        else: #only do subword tokenization.
-            tokens_a, labels_a, example.idx_map= tokenizer.subword_tokenize([token.lower() for token in example.text_a], example.label )
+        else:  # only do subword tokenization.
+            tokens_a, labels_a, example.idx_map = tokenizer.subword_tokenize(
+                [token.lower() for token in example.text_a], example.label)
 
         tokens_b = None
         if example.text_b:
@@ -221,22 +225,22 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
 
-        if mode!="ae":
+        if mode != "ae":
             label_id = label_map[example.label]
         else:
-            label_id = [-1] * len(input_ids) #-1 is the index to ignore
-            #truncate the label length if it exceeds the limit.
-            lb=[label_map[label] for label in labels_a]
+            label_id = [-1] * len(input_ids)  # -1 is the index to ignore
+            # truncate the label length if it exceeds the limit.
+            lb = [label_map[label] for label in labels_a]
             if len(lb) > max_seq_length - 2:
                 lb = lb[0:(max_seq_length - 2)]
-            label_id[1:len(lb)+1] = lb
+            label_id[1:len(lb) + 1] = lb
 
         features.append(
-                InputFeatures(
-                        input_ids=input_ids,
-                        input_mask=input_mask,
-                        segment_ids=segment_ids,
-                        label_id=label_id))
+            InputFeatures(
+                input_ids=input_ids,
+                input_mask=input_mask,
+                segment_ids=segment_ids,
+                label_id=label_id))
     return features
 
 

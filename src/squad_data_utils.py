@@ -20,6 +20,7 @@ import json
 import collections
 import math
 
+
 class SquadExample(object):
     """A single training/test example for simple sequence classification."""
 
@@ -52,6 +53,7 @@ class SquadExample(object):
             s += ", end_position: %d" % (self.end_position)
         return s
 
+
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -78,16 +80,18 @@ class InputFeatures(object):
         self.segment_ids = segment_ids
         self.start_position = start_position
         self.end_position = end_position
-        
+
 
 def read_squad_examples(input_file, is_training):
     """Read a SQuAD json file into a list of SquadExample."""
     with open(input_file, "r", encoding='utf-8') as reader:
         input_data = json.load(reader)["data"]
+
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
             return True
         return False
+
     examples = []
 
     for entry in input_data:
@@ -120,13 +124,13 @@ def read_squad_examples(input_file, is_training):
                     answer_length = len(orig_answer_text)
                     start_position = char_to_word_offset[answer_offset]
                     end_position = char_to_word_offset[answer_offset + answer_length - 1]
-                    
+
                     actual_text = " ".join(doc_tokens[start_position:(end_position + 1)])
                     cleaned_answer_text = " ".join(
                         whitespace_tokenize(orig_answer_text))
                     if actual_text.find(cleaned_answer_text) == -1:
                         logger.warning("Could not find answer: '%s' vs. '%s'",
-                                           actual_text, cleaned_answer_text)
+                                       actual_text, cleaned_answer_text)
                         continue
 
                 example = SquadExample(
@@ -268,6 +272,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
 
     return features
 
+
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
                          orig_answer_text):
     """Returns tokenized answer spans that better match the annotated answer."""
@@ -342,8 +347,6 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
     return cur_span_index == best_span_index
 
 
-
-
 """ generate predictions """
 
 RawResult = collections.namedtuple("RawResult",
@@ -354,8 +357,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                       max_answer_length, do_lower_case, output_prediction_file,
                       output_nbest_file, verbose_logging):
     """Write final predictions to the json file."""
-    #logger.info("Writing predictions to: %s" % (output_prediction_file))
-    #logger.info("Writing nbest to: %s" % (output_nbest_file))
+    # logger.info("Writing predictions to: %s" % (output_prediction_file))
+    # logger.info("Writing nbest to: %s" % (output_nbest_file))
 
     example_index_to_features = collections.defaultdict(list)
     for feature in all_features:
@@ -482,7 +485,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
     with open(output_nbest_file, "w") as writer:
         writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
-    
+
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     """Project the tokenized prediction back to the original text."""
@@ -533,9 +536,9 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
 
     start_position = tok_text.find(pred_text)
     if start_position == -1:
-        #if verbose_logging:
-            #logger.info(
-            #    "Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
+        # if verbose_logging:
+        # logger.info(
+        #    "Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
         return orig_text
     end_position = start_position + len(pred_text) - 1
 
@@ -543,9 +546,9 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     (tok_ns_text, tok_ns_to_s_map) = _strip_spaces(tok_text)
 
     if len(orig_ns_text) != len(tok_ns_text):
-        #if verbose_logging:
-            #logger.info("Length not equal after stripping spaces: '%s' vs '%s'",
-            #                orig_ns_text, tok_ns_text)
+        # if verbose_logging:
+        # logger.info("Length not equal after stripping spaces: '%s' vs '%s'",
+        #                orig_ns_text, tok_ns_text)
         return orig_text
 
     # We then project the characters in `pred_text` back to `orig_text` using
@@ -561,8 +564,8 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
             orig_start_position = orig_ns_to_s_map[ns_start_position]
 
     if orig_start_position is None:
-        #if verbose_logging:
-            #logger.info("Couldn't map start position")
+        # if verbose_logging:
+        # logger.info("Couldn't map start position")
         return orig_text
 
     orig_end_position = None
@@ -572,8 +575,8 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
             orig_end_position = orig_ns_to_s_map[ns_end_position]
 
     if orig_end_position is None:
-        #if verbose_logging:
-            #logger.info("Couldn't map end position")
+        # if verbose_logging:
+        # logger.info("Couldn't map end position")
         return orig_text
 
     output_text = orig_text[orig_start_position:(orig_end_position + 1)]
